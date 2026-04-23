@@ -1,0 +1,1 @@
+{"version":3,"file":"voiceService.d.ts","sourceRoot":"","sources":["../../src/services/voiceService.ts"],"names":[],"mappings":"AAKA,wBAAsB,sBAAsB,CAAC,IAAI,EAAE,MAAM,EAAE,cAAc,EAAE,MAAM,GAAG,OAAO,CAAC;IAC1F,YAAY,EAAE,MAAM,CAAC;IACrB,WAAW,EAAE,MAAM,CAAC;IACpB,QAAQ,EAAE,MAAM,EAAE,CAAC;IACnB,gBAAgB,CAAC,EAAE,MAAM,CAAC;CAC3B,CAAC,CAiDD"}
