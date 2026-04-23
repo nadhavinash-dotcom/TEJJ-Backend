@@ -23,6 +23,8 @@ import adminRoutes from './routes/admin';
 import marketRatesRoutes from './routes/market-rates';
 import referralsRoutes from './routes/referrals';
 import analyticsRoutes from './routes/analytics';
+import matchesRoutes from './routes/matches';
+import crewPoolsRoutes from './routes/crew-pools';
 
 const app = express();
 const PORT = process.env.API_PORT || 4000;
@@ -64,6 +66,8 @@ app.use('/admin', adminRoutes);
 app.use('/market-rates', marketRatesRoutes);
 app.use('/referrals', referralsRoutes);
 app.use('/analytics', analyticsRoutes);
+app.use('/matches', matchesRoutes);
+app.use('/crew-pools', crewPoolsRoutes);
 
 // 404
 app.use((_, res) => res.status(404).json({ success: false, error: 'Not found' }));

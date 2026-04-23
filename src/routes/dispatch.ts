@@ -8,6 +8,24 @@ import crypto from 'crypto';
 
 const router = Router();
 
+function buildQrToken(workerId: string, matchId: string) {
+  const timestamp = Date.now();
+  const secret = process.env.JWT_SECRET || 'default-secret';
+  const signature = crypto.createHmac('sha256', secret)
+    .update(`${workerId}:${matchId}:${timestamp}`)
+    .digest('hex');
+
+  return {
+    qr_token: Buffer.from(JSON.stringify({
+      worker_id: workerId,
+      match_id: matchId,
+      timestamp,
+      signature,
+    })).toString('base64'),
+    expires_at: new Date(timestamp + 5 * 60 * 1000).toISOString(),
+  };
+}
+
 // POST /dispatch/accept — Worker accepts L1 Flash job (atomic)
 router.post('/accept', authMiddleware, async (req: AuthRequest, res: Response) => {
   const { job_id } = req.body;
@@ -26,8 +44,7 @@ router.post('/accept', authMiddleware, async (req: AuthRequest, res: Response) =
   res.json(result);
 });
 
-// POST /dispatch/confirm-arrival — Employer scans QR to confirm arrival
-router.post('/confirm-arrival', authMiddleware, async (req: AuthRequest, res: Response) => {
+async function confirmArrival(req: AuthRequest, res: Response) {
   const { qr_token } = req.body;
   const employer = await Employer.findOne({ user_id: req.user!.userId });
   if (!employer) {
@@ -79,7 +96,11 @@ router.post('/confirm-arrival', authMiddleware, async (req: AuthRequest, res: Re
   } catch {
     res.status(400).json({ success: false, error: 'Invalid QR token' });
   }
-});
+}
+
+// POST /dispatch/confirm-arrival — Employer scans QR to confirm arrival
+router.post('/confirm-arrival', authMiddleware, confirmArrival);
+router.post('/verify-arrival', authMiddleware, confirmArrival);
 
 // POST /dispatch/no-show — Employer reports worker no-show
 router.post('/no-show', authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -132,20 +153,28 @@ router.post('/generate-qr', authMiddleware, async (req: AuthRequest, res: Respon
     return;
   }
 
-  const timestamp = Date.now();
-  const secret = process.env.JWT_SECRET || 'default-secret';
-  const signature = crypto.createHmac('sha256', secret)
-    .update(`${worker._id}:${match_id}:${timestamp}`)
-    .digest('hex');
+  res.json({ success: true, data: buildQrToken(worker._id.toString(), match_id) });
+});
 
-  const payload = Buffer.from(JSON.stringify({
-    worker_id: worker._id.toString(),
-    match_id,
-    timestamp,
-    signature,
-  })).toString('base64');
+// GET /dispatch/qr-token — Convenience alias for the latest active match
+router.get('/qr-token', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const worker = await Worker.findOne({ user_id: req.user!.userId });
+  if (!worker) {
+    res.status(403).json({ success: false, error: 'No worker profile' });
+    return;
+  }
 
-  res.json({ success: true, data: { qr_token: payload, expires_in: 300 } });
+  const match = await Match.findOne({
+    worker_id: worker._id,
+    status: { $in: ['MATCHED', 'WORKER_EN_ROUTE', 'ARRIVED', 'CONFIRMED'] },
+  }).sort({ matched_at: -1 });
+
+  if (!match) {
+    res.status(404).json({ success: false, error: 'No active match found for QR generation' });
+    return;
+  }
+
+  res.json({ success: true, data: buildQrToken(worker._id.toString(), match._id.toString()) });
 });
 
 export default router;

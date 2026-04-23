@@ -1,4 +1,5 @@
 import { admin } from '../config/firebase-admin';
+import axios from 'axios';
 import { Notification } from '../models/Notification';
 import { User } from '../models/User';
 import { Employer } from '../models/Employer';
@@ -9,6 +10,12 @@ interface FlashJobPayload {
   job_title: string;
   pay_rate: number;
   skill: string;
+}
+
+interface WhatsAppApplicationPayload {
+  toPhoneNumber: string;
+  jobTitle: string;
+  lane: number;
 }
 
 export const notificationService = {
@@ -90,5 +97,29 @@ export const notificationService = {
     deep_link?: string;
   }): Promise<void> {
     await Notification.create(params);
+  },
+
+  async sendWhatsAppApplicationNotification(payload: WhatsAppApplicationPayload): Promise<void> {
+    const webhookUrl = process.env.WHATSAPP_APPLICATION_WEBHOOK_URL;
+    const body = `Application received for ${payload.jobTitle} in lane ${payload.lane}.`;
+
+    if (!webhookUrl) {
+      console.log(`[whatsapp] ${payload.toPhoneNumber}: ${body}`);
+      return;
+    }
+
+    try {
+      await axios.post(webhookUrl, {
+        to: payload.toPhoneNumber,
+        message: body,
+        template: 'job_application_success',
+        metadata: {
+          job_title: payload.jobTitle,
+          lane: payload.lane,
+        },
+      }, { timeout: 5000 });
+    } catch (error) {
+      console.error('WhatsApp webhook error:', error);
+    }
   },
 };

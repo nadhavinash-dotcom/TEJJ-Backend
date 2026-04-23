@@ -7,7 +7,7 @@ import { Job } from '../models/Job';
 import { Match } from '../models/Match';
 import { WhisperPost } from '../models/WhisperPost';
 import { MarketRate } from '../models/MarketRate';
-import { SKILL_LIST, INDIAN_CITIES } from '../../utils';
+import { SKILL_LIST, INDIAN_CITIES } from '../utils';
 
 const router = Router();
 router.use(adminAuthMiddleware);

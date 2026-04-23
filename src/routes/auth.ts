@@ -1,22 +1,24 @@
 import { Router, Request, Response } from 'express';
-import { admin } from '../config/firebase-admin';
 import { User } from '../models/User';
+import { authMiddleware, AuthRequest, firebaseAuthMiddleware, FirebaseAuthRequest } from '../middleware/auth';
+import { Worker } from '../models/Worker';
+import { Employer } from '../models/Employer';
+import { buildProfileRoutingState } from '../utils';
 
 const router = Router();
 
 // POST /auth/register — Called after Firebase phone OTP success
-router.post('/register', async (req: Request, res: Response) => {
-  const { firebase_token, language, fcm_token, referral_code } = req.body;
+router.post('/register', firebaseAuthMiddleware, async (req: FirebaseAuthRequest, res: Response) => {
+  const { language, fcm_token } = req.body;
 
   try {
-    const decoded = await admin.auth().verifyIdToken(firebase_token);
-    const phone = decoded.phone_number;
+    const phone = req.firebase?.phone;
     if (!phone) {
       res.status(400).json({ success: false, error: 'No phone in token' });
       return;
     }
 
-    let user = await User.findOne({ firebase_uid: decoded.uid });
+    let user = await User.findOne({ firebase_uid: req.firebase!.uid });
 
     if (user) {
       // Existing user — update token
@@ -29,7 +31,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
     user = await User.create({
       phone_number: phone,
-      firebase_uid: decoded.uid,
+      firebase_uid: req.firebase!.uid,
       language: language || 'hi',
       fcm_token,
       has_worker: false,
@@ -44,24 +46,51 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // GET /auth/me — Get current user
-router.get('/me', async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ success: false, error: 'No token' });
-    return;
-  }
-  const token = authHeader.split(' ')[1];
-
+router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    const user = await User.findOne({ firebase_uid: decoded.uid }).lean();
+    const user = await User.findById(req.user!.userId).lean();
     if (!user) {
       res.status(404).json({ success: false, error: 'User not found' });
       return;
     }
-    res.json({ success: true, data: user });
-  } catch {
-    res.status(401).json({ success: false, error: 'Invalid token' });
+
+    const [worker, employer] = await Promise.all([
+      Worker.findOne({ user_id: user._id }).select('_id').lean(),
+      Employer.findOne({ user_id: user._id }).select('_id').lean(),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        ...user,
+        worker_id: worker?._id ?? null,
+        employer_id: employer?._id ?? null,
+        worker_profile_routing: buildProfileRoutingState({ role: 'worker', hasProfile: Boolean(worker) }),
+        employer_profile_routing: buildProfileRoutingState({ role: 'employer', hasProfile: Boolean(employer) }),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: 'Failed to fetch current user' });
+  }
+});
+
+// POST /auth/set-role — Set user's active role
+router.patch('/set-role', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { role } = req.body;
+
+  if (!['worker', 'employer'].includes(role)) {
+    res.status(400).json({ success: false, error: 'Invalid role. Must be worker or employer.' });
+    return;
+  }
+
+  try {
+    const userId = req.user?.userId;
+    await User.updateOne({ _id: userId }, { $set: { active_role: role } });
+    res.json({ success: true, message: `Active role set to ${role}` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to set active role' });
   }
 });
 

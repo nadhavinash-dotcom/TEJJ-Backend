@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { transcribeAndTranslate } from '../services/voiceService';
-import { mapVoiceToSkill, mapVoiceToExperience, mapVoiceToPay } from '../../utils';
+import { mapVoiceToSkill, mapVoiceToExperience, mapVoiceToPay } from '../utils';
 
 const router = Router();
 

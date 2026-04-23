@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { extractKeywords } from '../../utils';
+import { extractKeywords } from '../utils';
 
 const GOOGLE_TRANSLATE_API = 'https://translation.googleapis.com/language/translate/v2';
 

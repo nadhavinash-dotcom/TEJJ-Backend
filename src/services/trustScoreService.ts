@@ -3,7 +3,7 @@ import { Employer } from '../models/Employer';
 import { RatingWorker } from '../models/RatingWorker';
 import { RatingEmployer } from '../models/RatingEmployer';
 import { Match } from '../models/Match';
-import { computeTrustScore, computeDignityScore, computeProfileDepthScore } from '../../utils';
+import { computeTrustScore, computeDignityScore, computeProfileDepthScore } from '../utils';
 
 export async function recomputeWorkerTrustScore(workerId: string): Promise<void> {
   const worker = await Worker.findById(workerId);

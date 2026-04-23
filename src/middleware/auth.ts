@@ -2,7 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { admin } from '../config/firebase-admin';
 import { User } from '../models/User';
 
-export interface AuthRequest extends Request {
+export interface FirebaseAuthRequest extends Request {
+  firebase?: {
+    uid: string;
+    phone?: string;
+  };
+  uid?: string;
+}
+
+export interface AuthRequest extends FirebaseAuthRequest {
   user?: {
     uid: string;
     userId: string;
@@ -10,23 +18,51 @@ export interface AuthRequest extends Request {
   };
 }
 
-export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+async function verifyFirebaseToken(req: Request, res: Response) {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
+  const bodyToken = typeof req.body?.firebase_token === 'string' ? req.body.firebase_token : undefined;
+  const token = bearerToken || bodyToken;
+
+  if (!token) {
     res.status(401).json({ success: false, error: 'No token provided' });
+    return null;
+  }
+
+  try {
+    return await admin.auth().verifyIdToken(token);
+  } catch {
+    res.status(401).json({ success: false, error: 'Invalid token' });
+    return null;
+  }
+}
+
+export async function firebaseAuthMiddleware(req: FirebaseAuthRequest, res: Response, next: NextFunction): Promise<void> {
+  const decoded = await verifyFirebaseToken(req, res);
+  if (!decoded) {
     return;
   }
 
-  const token = authHeader.split(' ')[1];
+  req.firebase = { uid: decoded.uid, phone: decoded.phone_number };
+  req.uid = decoded.uid;
+  next();
+}
+
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  const decoded = await verifyFirebaseToken(req, res);
+  if (!decoded) {
+    return;
+  }
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
     const user = await User.findOne({ firebase_uid: decoded.uid });
     if (!user) {
       res.status(401).json({ success: false, error: 'User not found' });
       return;
     }
 
+    req.firebase = { uid: decoded.uid, phone: decoded.phone_number };
+    req.uid = decoded.uid;
     req.user = { uid: decoded.uid, userId: user._id.toString(), phone: user.phone_number };
 
     // Update last_active and fcm_token if provided
@@ -37,7 +73,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
 
     next();
   } catch {
-    res.status(401).json({ success: false, error: 'Invalid token' });
+    res.status(500).json({ success: false, error: 'Failed to authenticate user' });
   }
 }
 

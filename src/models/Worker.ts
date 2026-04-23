@@ -55,6 +55,7 @@ export interface IWorker extends Document {
   available_days: string[];
   available_from?: string;
   available_to?: string;
+  preferred_shifts: string[];
   notice_period_days: number;
   min_pay_per_shift?: number;
   min_monthly_salary?: number;
@@ -146,6 +147,7 @@ const workerSchema = new Schema<IWorker>({
   available_days: [String],
   available_from: String,
   available_to: String,
+  preferred_shifts: [String],
   notice_period_days: { type: Number, default: 0 },
   min_pay_per_shift: Number,
   min_monthly_salary: Number,

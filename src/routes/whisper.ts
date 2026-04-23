@@ -30,7 +30,18 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     return;
   }
 
-  const { employer_locality, employer_type, category, content, original_language, transcribed_english } = req.body;
+  const { employer_locality, employer_type, category, content, complaint_text, original_language, transcribed_english } = req.body;
+  const normalizedContent = typeof content === 'string' && content.trim()
+    ? content.trim()
+    : typeof complaint_text === 'string' && complaint_text.trim()
+      ? complaint_text.trim()
+      : '';
+
+  if (!category || !normalizedContent) {
+    res.status(400).json({ success: false, error: 'category and content are required' });
+    return;
+  }
+
   const worker_id_hash = crypto.createHash('sha256').update(worker._id.toString()).digest('hex');
 
   const post = await WhisperPost.create({
@@ -38,7 +49,7 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     employer_locality,
     employer_type,
     category,
-    content,
+    content: normalizedContent,
     original_language,
     transcribed_english,
     status: 'PENDING_REVIEW',
