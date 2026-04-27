@@ -2,10 +2,14 @@ import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { Worker } from '../models/Worker';
 import { User } from '../models/User';
-import { buildProfileRoutingState, computeProfileDepthScore, ContractValidationError, mockAIScore, normalizeWorkerOnboardingPayload } from '../utils';
+import { buildProfileRoutingState, computeProfileDepthScore, mockAIScore } from '../utils';
+import { ContractValidationError, normalizeWorkerOnboardingPayload } from '../utils/contract-helpers';
 import crypto from 'crypto';
+import multer from 'multer';
+import { uploadFile } from '../services/uploadService';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 // GET /workers/me
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -49,7 +53,10 @@ router.get('/profile-status', authMiddleware, async (req: AuthRequest, res: Resp
 });
 
 // POST /workers — Create worker profile
-router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/create', authMiddleware, upload.fields([
+  { name: 'profile_photo', maxCount: 1 },
+  { name: 'skill_video', maxCount: 1 }
+]), async (req: AuthRequest, res: Response) => {
   const existing = await Worker.findOne({ user_id: req.user!.userId });
   if (existing) {
     res.status(409).json({ success: false, error: 'Worker profile already exists' });
@@ -57,19 +64,45 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const payload = normalizeWorkerOnboardingPayload(req.body);
+    const userId = req.user!.userId;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    
+    let profile_photo_url = req.body.profile_photo_url;
+    let skill_video_url = req.body.skill_video_url;
+
+    // Handle file uploads
+    if (files['profile_photo']?.[0]) {
+      profile_photo_url = await uploadFile(files['profile_photo'][0], userId);
+    }
+    if (files['skill_video']?.[0]) {
+      skill_video_url = await uploadFile(files['skill_video'][0], userId);
+    }
+
+    // Parse numeric/json fields from FormData if they come as strings
+    const rawPayload = { ...req.body };
+    if (typeof rawPayload.sub_skills === 'string') rawPayload.sub_skills = JSON.parse(rawPayload.sub_skills);
+    if (typeof rawPayload.available_days === 'string') rawPayload.available_days = JSON.parse(rawPayload.available_days);
+    if (typeof rawPayload.preferred_shifts === 'string') rawPayload.preferred_shifts = JSON.parse(rawPayload.preferred_shifts);
+    if (typeof rawPayload.ai_score === 'string') rawPayload.ai_score = JSON.parse(rawPayload.ai_score);
+    
+    const payload = normalizeWorkerOnboardingPayload({
+      ...rawPayload,
+      profile_photo_url,
+      skill_video_url
+    });
+
     const worker = await Worker.create({
-      user_id: req.user!.userId,
+      user_id: userId,
       status: 'DRAFT',
       ...payload,
     });
 
-    await User.updateOne({ _id: req.user!.userId }, { $set: { has_worker: true, active_role: 'worker', fcm_token: payload.fcm_token } });
+    await User.updateOne({ _id: userId }, { $set: { has_worker: true, active_role: 'worker', fcm_token: payload.fcm_token } });
 
     res.status(201).json({
       success: true,
       data: {
-        _id: req.user!.userId,
+        _id: userId,
         worker_id: worker._id,
         has_worker: true,
         active_role: 'worker',

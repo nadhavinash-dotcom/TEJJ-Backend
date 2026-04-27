@@ -1,69 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
-import { admin } from '../config/firebase-admin';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 
-export interface FirebaseAuthRequest extends Request {
-  firebase?: {
-    uid: string;
-    phone?: string;
-  };
-  uid?: string;
-}
-
-export interface AuthRequest extends FirebaseAuthRequest {
+export interface AuthRequest extends Request {
   user?: {
-    uid: string;
     userId: string;
     phone: string;
+    role?: string;
   };
 }
 
-async function verifyFirebaseToken(req: Request, res: Response) {
+const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret';
+
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
-  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
-  const bodyToken = typeof req.body?.firebase_token === 'string' ? req.body.firebase_token : undefined;
-  const token = bearerToken || bodyToken;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
 
   if (!token) {
     res.status(401).json({ success: false, error: 'No token provided' });
-    return null;
-  }
-
-  try {
-    return await admin.auth().verifyIdToken(token);
-  } catch {
-    res.status(401).json({ success: false, error: 'Invalid token' });
-    return null;
-  }
-}
-
-export async function firebaseAuthMiddleware(req: FirebaseAuthRequest, res: Response, next: NextFunction): Promise<void> {
-  const decoded = await verifyFirebaseToken(req, res);
-  if (!decoded) {
-    return;
-  }
-
-  req.firebase = { uid: decoded.uid, phone: decoded.phone_number };
-  req.uid = decoded.uid;
-  next();
-}
-
-export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  const decoded = await verifyFirebaseToken(req, res);
-  if (!decoded) {
     return;
   }
 
   try {
-    const user = await User.findOne({ firebase_uid: decoded.uid });
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; phone: string; role?: string };
+    
+    const user = await User.findById(decoded.userId);
     if (!user) {
       res.status(401).json({ success: false, error: 'User not found' });
       return;
     }
 
-    req.firebase = { uid: decoded.uid, phone: decoded.phone_number };
-    req.uid = decoded.uid;
-    req.user = { uid: decoded.uid, userId: user._id.toString(), phone: user.phone_number };
+    req.user = { 
+      userId: user._id.toString(), 
+      phone: user.phone_number,
+      role: user.active_role
+    };
 
     // Update last_active and fcm_token if provided
     const fcmToken = req.headers['x-fcm-token'] as string;
@@ -72,8 +43,9 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     await User.updateOne({ _id: user._id }, updates);
 
     next();
-  } catch {
-    res.status(500).json({ success: false, error: 'Failed to authenticate user' });
+  } catch (err) {
+    console.error('JWT Verification Error:', err);
+    res.status(401).json({ success: false, error: 'Invalid or expired token' });
   }
 }
 
