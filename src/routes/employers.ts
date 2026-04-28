@@ -5,7 +5,8 @@ import { User } from '../models/User';
 import { Match } from '../models/Match';
 import { Job } from '../models/Job';
 import { Application } from '../models/Application';
-import { buildProfileRoutingState, ContractValidationError, EMPLOYER_PLANS, normalizeEmployerOnboardingPayload } from '../utils';
+import { EMPLOYER_PLANS } from '../utils/constants';
+import { buildProfileRoutingState, ContractValidationError, normalizeEmployerOnboardingPayload } from '../utils/contract-helpers';
 import { RetainEnrollment } from '../models/RetainEnrollment';
 import { Worker } from '../models/Worker';
 
@@ -74,13 +75,12 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res: Response) =
       },
     });
   } catch (error) {
-  console.error(error);
-  // Check if it's a specific type of error safely
-  if (error && error.name === 'JsonWebTokenError') { 
-      return res.status(401).json({ message: 'Invalid Token' });
+    console.error(error);
+    if (error instanceof ContractValidationError) {
+      return res.status(400).json({ success: false, error: error.message, details: error.details });
+    }
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
-  res.status(500).json({ message: 'Internal Server Error' });
-}
 });
 
 // PATCH /employers/me — Update employer profile

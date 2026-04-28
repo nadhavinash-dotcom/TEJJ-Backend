@@ -14,9 +14,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret';
 
 export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
+  
+  // More robust token extraction (handles case-insensitivity and multiple spaces)
+  let token: string | undefined;
+  if (authHeader) {
+    const parts = authHeader.split(/\s+/);
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1];
+    }
+  }
 
   if (!token) {
+    console.warn(`[Auth] No token provided for ${req.method} ${req.originalUrl} from ${req.ip}`);
     res.status(401).json({ success: false, error: 'No token provided' });
     return;
   }

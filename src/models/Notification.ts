@@ -17,7 +17,7 @@ const notificationSchema = new Schema<INotification>({
   type: {
     type: String, required: true,
     enum: ['FLASH_JOB', 'MATCH_CONFIRMED', 'ARRIVAL_REMINDER', 'RATE_REQUEST', 'INSURANCE_UPDATE',
-           'LOAN_UPDATE', 'TRUST_SCORE_CHANGE', 'INTERVIEW_SCHEDULED', 'SYSTEM']
+           'LOAN_UPDATE', 'TRUST_SCORE_CHANGE', 'INTERVIEW_SCHEDULED', 'SYSTEM', 'APPLICATION_RECEIVED']
   },
   title: { type: String, required: true },
   body: { type: String, required: true },

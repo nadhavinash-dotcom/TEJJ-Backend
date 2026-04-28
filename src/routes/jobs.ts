@@ -8,7 +8,7 @@ import { Application } from '../models/Application';
 import { JobTemplate } from '../models/JobTemplate';
 import { broadcastFlashJob, computeSUPS } from '../services/dispatchService';
 import type { FilterQuery } from 'mongoose';
-import { deriveLaneExpiry } from '../utils';
+import { deriveLaneExpiry } from '../utils/contract-helpers';
 
 const router = Router();
 
@@ -241,7 +241,7 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
 });
 
 // POST /jobs — Create job (employer)
-router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/create', authMiddleware, async (req: AuthRequest, res: Response) => {
   const employer = await Employer.findOne({ user_id: req.user!.userId });
   if (!employer) {
     res.status(403).json({ success: false, error: 'Not an employer' });
