@@ -1,47 +1,92 @@
 import { Router, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
-import { authMiddleware, AuthRequest, firebaseAuthMiddleware, FirebaseAuthRequest } from '../middleware/auth';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { Worker } from '../models/Worker';
 import { Employer } from '../models/Employer';
-import { buildProfileRoutingState } from '../utils';
+import { buildProfileRoutingState } from '../utils/contract-helpers';
+import { otpService } from '../services/twilioProvider';
 
 const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret';
 
-// POST /auth/register — Called after Firebase phone OTP success
-router.post('/register', firebaseAuthMiddleware, async (req: FirebaseAuthRequest, res: Response) => {
-  const { language, fcm_token } = req.body;
+// POST /auth/otp/send — Trigger OTP via OTP Service
+router.post('/otp/send', async (req: Request, res: Response) => {
+  const { phone_number } = req.body;
+
+  if (!phone_number) {
+    res.status(400).json({ success: false, error: 'Phone number is required' });
+    return;
+  }
+
+  // const cleanPhone = phone_number.replace(/^\+/, '').replace(/\s+/g, '');
+
+  console.log(`Sending OTP to ${phone_number}`);
+
+  const success = await otpService.send(phone_number);
+  if (success) {
+    res.json({ success: true, message: 'OTP sent successfully' });
+  } else {
+    res.status(500).json({ success: false, error: 'Failed to send OTP' });
+  }
+});
+
+// POST /auth/otp/verify — Verify OTP and return JWT
+router.post('/otp/verify', async (req: Request, res: Response) => {
+  const { phone_number, code, language, fcm_token } = req.body;
+
+  if (!phone_number || !code) {
+    res.status(400).json({ success: false, error: 'Phone number and code are required' });
+    return;
+  }
+
+  const isValid = await otpService.verify(phone_number, code);
+  if (!isValid) {
+    res.status(401).json({ success: false, error: 'Invalid or expired OTP' });
+    return;
+  }
 
   try {
-    const phone = req.firebase?.phone;
-    if (!phone) {
-      res.status(400).json({ success: false, error: 'No phone in token' });
-      return;
-    }
+    console.log({ phone_number, code, language, fcm_token })
+    let user = await User.findOne({ phone_number });
 
-    let user = await User.findOne({ firebase_uid: req.firebase!.uid });
+    console.log({ user })
 
-    if (user) {
-      // Existing user — update token
-      await User.updateOne({ _id: user._id }, {
-        $set: { fcm_token, language, last_active: new Date() }
+    if (!user) {
+      // Create new user if doesn't exist
+      user = await User.create({
+        phone_number,
+        firebase_uid: `custom_${Date.now()}`, // Placeholder since original schema requires it
+        language: language || 'hi',
+        fcm_token,
+        has_worker: false,
+        has_employer: false,
       });
-      res.json({ success: true, data: { user_id: user._id, is_new: false } });
-      return;
+    } else {
+      // Update existing user
+      await User.updateOne({ _id: user._id }, {
+        $set: { fcm_token, language: language || user.language, last_active: new Date() }
+      });
     }
 
-    user = await User.create({
-      phone_number: phone,
-      firebase_uid: req.firebase!.uid,
-      language: language || 'hi',
-      fcm_token,
-      has_worker: false,
-      has_employer: false,
-    });
+    // Generate JWT
+    const token = jwt.sign(
+      { userId: user._id, phone: user.phone_number, role: user.active_role },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
 
-    res.status(201).json({ success: true, data: { user_id: user._id, is_new: true } });
-  } catch (err) {
-    console.error(err);
-    res.status(401).json({ success: false, error: 'Invalid token' });
+    res.json({
+      success: true,
+      data: {
+        token,
+        user_id: user._id,
+        is_new: !user.created_at || (Date.now() - user.created_at.getTime() < 5000)
+      }
+    });
+  } catch (error) {
+    console.error('Login Error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error during login' });
   }
 });
 

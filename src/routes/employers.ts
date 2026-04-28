@@ -42,7 +42,7 @@ router.get('/profile-status', authMiddleware, async (req: AuthRequest, res: Resp
 });
 
 // POST /employers — Create employer profile
-router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/create', authMiddleware, async (req: AuthRequest, res: Response) => {
   const existing = await Employer.findOne({ user_id: req.user!.userId });
   if (existing) {
     res.status(409).json({ success: false, error: 'Employer profile already exists' });
@@ -50,7 +50,9 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   }
 
   try {
+    console.log(req.body);
     const payload = normalizeEmployerOnboardingPayload(req.body);
+    console.log(payload);
     const employer = await Employer.create({
       user_id: req.user!.userId,
       ...payload,
@@ -72,13 +74,13 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    if (error instanceof ContractValidationError) {
-      res.status(400).json({ success: false, error: error.message, details: error.details });
-      return;
-    }
-    console.error('Create Employer Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to create employer profile' });
+  console.error(error);
+  // Check if it's a specific type of error safely
+  if (error && error.name === 'JsonWebTokenError') { 
+      return res.status(401).json({ message: 'Invalid Token' });
   }
+  res.status(500).json({ message: 'Internal Server Error' });
+}
 });
 
 // PATCH /employers/me — Update employer profile
