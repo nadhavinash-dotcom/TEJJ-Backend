@@ -12,90 +12,126 @@ import { deriveLaneExpiry } from '../utils/contract-helpers';
 
 const router = Router();
 
+function haversineKm(coords1: [number, number], coords2: [number, number]): number {
+  const [lng1, lat1] = coords1;
+  const [lng2, lat2] = coords2;
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+}
+
 // GET /jobs/feed — Worker job feed
 router.get('/feed', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const worker = await Worker.findOne({ user_id: req.user!.userId });
+    // 1. Fetch Worker (Use .lean() for faster reads since we don't need Mongoose documents)
+    const worker = await Worker.findOne({ user_id: req.user!.userId }).lean();
     if (!worker) {
       res.status(404).json({ success: false, error: 'Worker profile not found' });
       return;
     }
 
-    const { lane, min_pay, max_distance_km = 15, page = 1, limit = 20, skill, lat, lng } = req.query;
+    // 2. Sanitize and Extract Query Params
+    const { lane, min_pay, page = 1, limit = 20, skill, lat, lng } = req.query;
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.min(50, Math.max(1, Number(limit))); // Cap limit to prevent server overload
 
     const overrideLat = lat !== undefined ? Number(lat) : undefined;
     const overrideLng = lng !== undefined ? Number(lng) : undefined;
+
     const workerCoords = Number.isFinite(overrideLat) && Number.isFinite(overrideLng)
       ? [overrideLng as number, overrideLat as number]
       : (worker.last_known_location || worker.home_location)?.coordinates;
 
-    // Base query — no geo filter if worker has no location yet
-    const query: FilterQuery<typeof Job> = {
-      status: { $in: ['BROADCASTING', 'PARTIALLY_FILLED'] },
-    };
+    const max_distance_meters = (req.query.max_distance_km !== undefined
+      ? Number(req.query.max_distance_km)
+      : (worker.preferred_radius_km || 15)) * 1000;
 
-    // Only filter by skill if the worker has one set
-    if (skill) {
-      query.primary_skill = String(skill);
-    } else if (worker.primary_skill) {
-      query.primary_skill = worker.primary_skill;
+    // 3. Construct Query Conditions
+    const now = new Date();
+    const andConditions: FilterQuery<typeof Job>[] = [
+      { $or: [{ expires_at: { $exists: false } }, { expires_at: { $gt: now } }] },
+    ];
+
+    const effectiveMinPay = Math.max(
+      min_pay ? Number(min_pay) : 0,
+      worker.min_pay_per_shift ?? 0
+    );
+
+    if (effectiveMinPay > 0) {
+      andConditions.push({
+        $or: [{ pay_rate: { $gte: effectiveMinPay } }, { pay_min: { $gte: effectiveMinPay } }]
+      });
     }
 
-    // Apply geo proximity filter only when location is available
+    const query: FilterQuery<typeof Job> = {
+      status: { $in: ['BROADCASTING', 'PARTIALLY_FILLED'] },
+      is_demo_post: { $ne: true },
+      primary_skill: skill ? String(skill) : worker.primary_skill,
+      $and: andConditions,
+    };
+
     if (workerCoords) {
       query.location = {
         $near: {
           $geometry: { type: 'Point', coordinates: workerCoords },
-          $maxDistance: Number(max_distance_km) * 1000,
+          $maxDistance: max_distance_meters,
         },
       };
     }
 
     if (lane) query.lane = Number(lane);
-    if (min_pay) query.pay_rate = { $gte: Number(min_pay) };
-    if (worker.min_pay_per_shift) {
-      query.pay_rate = { ...(query.pay_rate as object || {}), $gte: worker.min_pay_per_shift };
-    }
 
+    console.log((JSON.stringify(query)));
+
+    // 4. Fetch Jobs
     const jobs = await Job.find(query)
-      .skip((Number(page) - 1) * Number(limit))
-      .limit(Number(limit))
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
       .lean();
+
+    console.log(jobs);
 
     if (jobs.length === 0) {
       res.json({ success: true, data: [] });
       return;
     }
 
+    // 5. Parallel Data Fetching (Employers & Market Rates)
     const employerIds = [...new Set(jobs.map(j => j.employer_id.toString()))];
-    const employers = await Employer.find({ _id: { $in: employerIds } })
-      .select('property_type area_locality dignity_score gstin_verified uniform_provided meals_provided dignity_state min_dignity_score')
-      .lean();
+    const uniqueSkills = [...new Set(jobs.map(j => j.primary_skill))];
+
+    // Fetch both datasets concurrently rather than sequentially
+    const [employers, marketRates] = await Promise.all([
+      Employer.find({ _id: { $in: employerIds } })
+        .select('property_type area_locality dignity_score gstin_verified')
+        .lean(),
+      MarketRate.find({ city: worker.city, skill: { $in: uniqueSkills } }).lean()
+    ]);
 
     const employerMap = new Map(employers.map(e => [e._id.toString(), e]));
+    const marketRateMap = new Map(marketRates.map(r => [`${r.city}:${r.skill}`, r.median]));
 
-    const feed = await Promise.all(jobs.map(async (job) => {
+    // 6. Map Feed Responses
+    const feedPromises = jobs.map(async (job) => {
       const employer = employerMap.get(job.employer_id.toString());
       if (!employer) return null;
 
-      // Apply dignity gate
+      // ⚠️ Note: Filtering here reduces the output size below the requested 'limit'
       if (employer.dignity_score < worker.min_dignity_score) return null;
 
-      let distance_km: number | undefined;
-      if (workerCoords) {
-        const [lng1, lat1] = workerCoords;
-        const [lng2, lat2] = job.location?.coordinates ?? [0, 0];
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-        distance_km = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
-      }
+      const distance_km = workerCoords && job.location?.coordinates
+        ? haversineKm(workerCoords as [number, number], job.location.coordinates)
+        : undefined;
 
+      // ⚠️ Note: N+1 query vulnerability if computeSUPS makes DB calls
       const sups_score = await computeSUPS(worker._id.toString(), job._id.toString());
 
-      const marketRate = await MarketRate.findOne({ city: worker.city, skill: job.primary_skill });
-      const market_rate_delta = marketRate ? (job.pay_rate ?? 0) - marketRate.median : undefined;
+      const marketMedian = marketRateMap.get(`${worker.city}:${job.primary_skill}`);
+      const market_rate_delta = marketMedian !== undefined && job.pay_rate !== undefined
+        ? job.pay_rate - marketMedian
+        : undefined;
 
       return {
         _id: job._id,
@@ -117,9 +153,11 @@ router.get('/feed', authMiddleware, async (req: AuthRequest, res: Response) => {
         employer_dignity_score: employer.dignity_score,
         employer_gstin_verified: employer.gstin_verified,
       };
-    }));
+    });
 
-    res.json({ success: true, data: feed.filter(Boolean) });
+    const feed = (await Promise.all(feedPromises)).filter(Boolean);
+
+    res.json({ success: true, data: feed });
   } catch (err) {
     console.error('Feed error:', err);
     res.status(500).json({ success: false, error: 'Failed to fetch job feed' });
@@ -201,17 +239,9 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
 
   const workerCoords = (worker?.last_known_location || worker?.home_location)?.coordinates;
   const jobCoords = job.location?.coordinates;
-  let distance_km: number | null = null;
-  if (workerCoords && jobCoords) {
-    const [workerLng, workerLat] = workerCoords;
-    const [jobLng, jobLat] = jobCoords;
-    const earthRadiusKm = 6371;
-    const dLat = (jobLat - workerLat) * Math.PI / 180;
-    const dLng = (jobLng - workerLng) * Math.PI / 180;
-    const haversine = Math.sin(dLat / 2) ** 2
-      + Math.cos(workerLat * Math.PI / 180) * Math.cos(jobLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-    distance_km = Math.round(earthRadiusKm * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine)) * 10) / 10;
-  }
+  const distance_km = workerCoords && jobCoords
+    ? haversineKm(workerCoords as [number, number], jobCoords)
+    : null;
 
   res.json({
     success: true,

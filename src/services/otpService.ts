@@ -9,9 +9,10 @@ export class DevOTPProvider implements OTPProvider {
     '+919999999901': '000000',
     '+919999999902': '000000',
     '+919999999903': '000000',
+    '+918888897687': '000000',
   };
 
-  constructor(private baseProvider: OTPProvider) {}
+  constructor(private baseProvider: OTPProvider) { }
 
   private getCleanPhone(phoneNumber: string): string {
     // Keep + if it's there, but remove all whitespace
