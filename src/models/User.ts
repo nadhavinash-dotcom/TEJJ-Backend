@@ -19,7 +19,7 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>({
   phone_number: { type: String, required: true, unique: true, trim: true },
   firebase_uid: { type: String, required: false, unique: true, sparse: true },
-  language: { type: String, default: 'hi' },
+  language: { type: String },
   has_worker: { type: Boolean, default: false },
   has_employer: { type: Boolean, default: false },
   active_role: { type: String, enum: ['worker', 'employer'] },

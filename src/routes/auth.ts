@@ -6,6 +6,7 @@ import { Worker } from '../models/Worker';
 import { Employer } from '../models/Employer';
 import { buildProfileRoutingState } from '../utils/contract-helpers';
 import { otpService } from '../services/twilioProvider';
+import { EMPLOYER_ESSENTIAL_FIELDS,  shapeEmployer,  shapeWorker,  UPDATABLE_FIELDS, WORKER_ESSENTIAL_FIELDS } from '../utils';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret';
@@ -91,6 +92,7 @@ router.post('/otp/verify', async (req: Request, res: Response) => {
 });
 
 // GET /auth/me — Get current user
+// GET /me — returns current user + essential profile snapshot
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const user = await User.findById(req.user!.userId).lean();
@@ -99,43 +101,94 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
       return;
     }
 
+    // Run only the queries we actually need, in parallel
     const [worker, employer] = await Promise.all([
-      Worker.findOne({ user_id: user._id }).select('_id').lean(),
-      Employer.findOne({ user_id: user._id }).select('_id').lean(),
+      user.has_worker
+        ? Worker.findOne({ user_id: user._id })
+          .select(WORKER_ESSENTIAL_FIELDS)
+          .lean()
+        : Promise.resolve(null),
+
+      user.has_employer
+        ? Employer.findOne({ user_id: user._id })
+          .select(EMPLOYER_ESSENTIAL_FIELDS)
+          .lean()
+        : Promise.resolve(null),
     ]);
 
     res.json({
       success: true,
       data: {
-        ...user,
-        worker_id: worker?._id ?? null,
-        employer_id: employer?._id ?? null,
-        worker_profile_routing: buildProfileRoutingState({ role: 'worker', hasProfile: Boolean(worker) }),
-        employer_profile_routing: buildProfileRoutingState({ role: 'employer', hasProfile: Boolean(employer) }),
+        // ── Core identity ──────────────────────────────────
+        _id: user._id,
+        phone: user.phone_number,
+        // email:         user.email,
+        language: user.language,
+        active_role: user.active_role,
+
+        has_worker: user.has_worker,
+        has_employer: user.has_employer,
+        created_at: user.created_at,
+
+        // ── Profile snapshots (null when role not present) ─
+        worker: worker ? shapeWorker(worker) : null,
+        employer: employer ? shapeEmployer(employer) : null,
       },
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: 'Failed to fetch current user' });
   }
 });
 
-// POST /auth/set-role — Set user's active role
-router.patch('/set-role', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const { role } = req.body;
 
-  if (!['worker', 'employer'].includes(role)) {
-    res.status(400).json({ success: false, error: 'Invalid role. Must be worker or employer.' });
+
+
+
+// ── Response shapers (rename / omit / compute as needed) ────────────────────
+
+// POST /auth/set-role — Set user's active role
+
+
+type UpdatableField = keyof typeof UPDATABLE_FIELDS;
+
+router.patch('/update-user', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const updates: Partial<Record<UpdatableField, unknown>> = {};
+  const invalidFields: Record<string, unknown> = {};
+
+  for (const field of Object.keys(UPDATABLE_FIELDS) as UpdatableField[]) {
+    if (!(field in req.body)) continue;
+
+    const value = req.body[field];
+    if (UPDATABLE_FIELDS[field](value)) {
+      updates[field] = value;
+    } else {
+      invalidFields[field] = value;
+    }
+  }
+
+  if (Object.keys(invalidFields).length > 0) {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid field values',
+      invalid: invalidFields,
+    });
+    return;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ success: false, error: 'No valid fields provided to update' });
     return;
   }
 
   try {
     const userId = req.user?.userId;
-    await User.updateOne({ _id: userId }, { $set: { active_role: role } });
-    res.json({ success: true, message: `Active role set to ${role}` });
+    await User.updateOne({ _id: userId }, { $set: updates });
+    res.json({ success: true, message: 'User updated successfully', updated: Object.keys(updates) });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: 'Failed to set active role' });
+    res.status(500).json({ success: false, error: 'Failed to update user' });
   }
 });
 

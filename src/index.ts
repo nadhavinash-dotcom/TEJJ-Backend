@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { connectDatabase } from './config/database';
-import { initFirebaseAdmin } from './config/firebase-admin';
+// import { initFirebaseAdmin } from './config/firebase-admin';
 
 // Routes
 import authRoutes from './routes/auth';
@@ -88,7 +88,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 async function start() {
   await connectDatabase();
-  initFirebaseAdmin();
+  // initFirebaseAdmin();
 
   // Start cron jobs
   const { startExpireJobsCron } = await import('./jobs/expireJobs');

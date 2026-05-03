@@ -64,8 +64,9 @@ export const EMPLOYER_PLANS = {
 } as const;
 
 export const SHIFT_PRESETS = [
-  { id: 'morning', label: 'Subah', labelEn: 'Morning', from: '06:00', to: '14:00', icon: '🌅' },
-  { id: 'evening', label: 'Shaam', labelEn: 'Evening', from: '14:00', to: '22:00', icon: '🌇' },
+  { id: 'morning', label: 'Subah', labelEn: 'Morning', from: '06:00', to: '12:00', icon: '🌅' },
+  { id: 'afternoon', label: 'Dopahar', labelEn: 'Afternoon', from: '12:00', to: '17:00', icon: '☀️' },
+  { id: 'evening', label: 'Shaam', labelEn: 'Evening', from: '17:00', to: '22:00', icon: '🌇' },
   { id: 'night', label: 'Raat', labelEn: 'Night', from: '22:00', to: '06:00', icon: '🌙' },
   { id: 'any', label: 'Koi bhi', labelEn: 'Any Time', from: '06:00', to: '23:59', icon: '🔄' },
 ] as const;
@@ -122,3 +123,56 @@ export const AI_SCORE_FORMULA = {
   WARMTH_WEIGHT: 0.15,
   HUMAN_REVIEW_THRESHOLD: 40,
 } as const;
+
+
+// ── Field allow-lists ────────────────────────────────────────────────────────
+
+export const WORKER_ESSENTIAL_FIELDS = [
+  '_id',
+  'full_name',
+  'profile_photo_url',
+  'primary_skill',
+  'secondary_skills',
+  'years_experience',
+  'city',
+  'area_locality',
+  'status',
+  'trust_score',
+  'show_up_rate',
+  'ai_score',
+  'ai_score_status',
+  'aadhaar_verified',
+  'available_days',
+  'available_from',
+  'available_to',
+  'preferred_shifts',
+  'min_pay_per_shift',
+  'min_monthly_salary',
+].join(' ');
+
+export const EMPLOYER_ESSENTIAL_FIELDS = [
+  '_id',
+  'property_name',
+  'property_type',
+  'property_segment',
+  'property_logo_url',
+  'city',
+  'area_locality',
+  'contact_name',
+  'contact_phone',
+  'plan',
+  'dignity_score',
+  'dignity_state',
+  'verified_employer_badge',
+  'confirmation_rate',
+  'suspended',
+  'posts_this_month',
+  'monthly_post_limit',
+  'confirm_gate_blocked',
+  // feature flags the client needs to gate UI
+  'cream_pool_access',
+  'database_search_access',
+  'analytics_access',
+  'interview_scheduler_access',
+  'multi_property_access',
+].join(' ');

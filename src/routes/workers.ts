@@ -109,75 +109,98 @@ router.post('/create', authMiddleware, upload.fields([
       },
     });
   } catch (error) {
+    console.error('Create Worker Error:', error);
     if (error instanceof ContractValidationError) {
       res.status(400).json({ success: false, error: error.message, details: error.details });
       return;
     }
-    console.error('Create Worker Error:', error);
     res.status(500).json({ success: false, error: 'Failed to create worker profile' });
   }
 });
 
 // PATCH /workers/me — Update worker profile
-router.patch('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
-  const {
-    primary_skill, sub_skills, years_experience, min_pay_per_shift,
-    home_lat, home_lng, home_city, home_area, available_days, preferred_shifts,
-    profile_photo_url, skill_video_url
-  } = req.body;
-
-  const updates: any = {};
-
-  // Work Details
-  if (primary_skill !== undefined) updates.primary_skill = String(primary_skill);
-  if (Array.isArray(sub_skills)) updates.secondary_skills = sub_skills.map(String);
-  if (years_experience !== undefined) {
-    const parsed = Number(years_experience);
-    if (isNaN(parsed)) return res.status(400).json({ success: false, error: 'years_experience must be a number' });
-    updates.years_experience = parsed;
-  }
-  if (min_pay_per_shift !== undefined) {
-    const parsed = Number(min_pay_per_shift);
-    if (isNaN(parsed)) return res.status(400).json({ success: false, error: 'min_pay_per_shift must be a number' });
-    updates.min_pay_per_shift = parsed;
-  }
-
-  // Schedule & Location
-  if (home_city !== undefined) updates.city = String(home_city);
-  if (home_area !== undefined) updates.area_locality = String(home_area);
-  if (available_days !== undefined) {
-    if (!Array.isArray(available_days)) return res.status(400).json({ success: false, error: 'available_days must be an array' });
-    updates.available_days = available_days.map(String);
-  }
-  if (preferred_shifts !== undefined) {
-    if (!Array.isArray(preferred_shifts)) return res.status(400).json({ success: false, error: 'preferred_shifts must be an array' });
-    updates.preferred_shifts = preferred_shifts.map(String);
-  }
-
-  if (home_lat !== undefined && home_lng !== undefined) {
-    const lat = Number(home_lat);
-    const lng = Number(home_lng);
-    if (isNaN(lat) || isNaN(lng)) return res.status(400).json({ success: false, error: 'home_lat and home_lng must be numbers' });
-    updates.home_location = {
-      type: 'Point',
-      coordinates: [lng, lat] // GeoJSON: [longitude, latitude]
-    };
-  } else if (home_lat !== undefined || home_lng !== undefined) {
-    return res.status(400).json({ success: false, error: 'Both home_lat and home_lng must be provided together' });
-  }
-
-  // Media
-  if (profile_photo_url !== undefined) updates.profile_photo_url = String(profile_photo_url);
-  if (skill_video_url !== undefined) updates.skill_video_url = String(skill_video_url);
-
-  if (Object.keys(updates).length === 0) {
-    res.status(400).json({ success: false, error: 'No valid fields provided for update' });
-    return;
-  }
-
+router.patch('/me', authMiddleware, upload.fields([
+  { name: 'profile_photo', maxCount: 1 },
+  { name: 'skill_video', maxCount: 1 }
+]), async (req: AuthRequest, res: Response) => {
   try {
+    const userId = req.user!.userId;
+    const rawPayload = { ...req.body };
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+    // Parse JSON strings from FormData if present
+    if (typeof rawPayload.sub_skills === 'string') rawPayload.sub_skills = JSON.parse(rawPayload.sub_skills);
+    if (typeof rawPayload.available_days === 'string') rawPayload.available_days = JSON.parse(rawPayload.available_days);
+    if (typeof rawPayload.preferred_shifts === 'string') rawPayload.preferred_shifts = JSON.parse(rawPayload.preferred_shifts);
+
+    const {
+      primary_skill, sub_skills, years_experience, min_pay_per_shift,
+      home_lat, home_lng, home_city, home_area, available_days, preferred_shifts,
+      profile_photo_url: existing_photo_url, skill_video_url: existing_video_url
+    } = rawPayload;
+
+    const updates: any = {};
+
+    // Work Details
+    if (primary_skill !== undefined && primary_skill !== '') updates.primary_skill = String(primary_skill);
+    if (Array.isArray(sub_skills)) updates.secondary_skills = sub_skills.map(String);
+    
+    if (years_experience !== undefined && years_experience !== '') {
+      const parsed = Number(years_experience);
+      if (isNaN(parsed)) return res.status(400).json({ success: false, error: 'years_experience must be a number' });
+      updates.years_experience = parsed;
+    }
+    
+    if (min_pay_per_shift !== undefined && min_pay_per_shift !== '') {
+      const parsed = Number(min_pay_per_shift);
+      if (isNaN(parsed)) return res.status(400).json({ success: false, error: 'min_pay_per_shift must be a number' });
+      updates.min_pay_per_shift = parsed;
+    }
+
+    // Schedule & Location
+    if (home_city !== undefined) updates.city = String(home_city);
+    if (home_area !== undefined) updates.area_locality = String(home_area);
+    if (available_days !== undefined) {
+      if (!Array.isArray(available_days)) return res.status(400).json({ success: false, error: 'available_days must be an array' });
+      updates.available_days = available_days.map(String);
+    }
+    if (preferred_shifts !== undefined) {
+      if (!Array.isArray(preferred_shifts)) return res.status(400).json({ success: false, error: 'preferred_shifts must be an array' });
+      updates.preferred_shifts = preferred_shifts.map(String);
+    }
+
+    if (home_lat !== undefined && home_lat !== '' && home_lng !== undefined && home_lng !== '') {
+      const lat = Number(home_lat);
+      const lng = Number(home_lng);
+      if (isNaN(lat) || isNaN(lng)) return res.status(400).json({ success: false, error: 'home_lat and home_lng must be numbers' });
+      updates.home_location = {
+        type: 'Point',
+        coordinates: [lng, lat] // GeoJSON: [longitude, latitude]
+      };
+    } else if ((home_lat !== undefined && home_lat !== '') || (home_lng !== undefined && home_lng !== '')) {
+      return res.status(400).json({ success: false, error: 'Both home_lat and home_lng must be provided together' });
+    }
+
+    // Media
+    // If explicit URLs are passed (e.g. they didn't change the photo), respect them
+    if (existing_photo_url !== undefined) updates.profile_photo_url = String(existing_photo_url);
+    if (existing_video_url !== undefined) updates.skill_video_url = String(existing_video_url);
+
+    // If new files were uploaded via multipart, process them and overwrite URLs
+    if (files && files['profile_photo']?.[0]) {
+      updates.profile_photo_url = await uploadFile(files['profile_photo'][0], userId);
+    }
+    if (files && files['skill_video']?.[0]) {
+      updates.skill_video_url = await uploadFile(files['skill_video'][0], userId);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ success: false, error: 'No valid fields provided for update' });
+      return;
+    }
+
     const worker = await Worker.findOneAndUpdate(
-      { user_id: req.user!.userId },
+      { user_id: userId },
       { $set: updates },
       { new: true }
     );

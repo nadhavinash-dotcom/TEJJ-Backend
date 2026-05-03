@@ -4,7 +4,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const UPLOAD_STORAGE = process.env.UPLOAD_STORAGE || 'local';
 const UPLOAD_LOCAL_PATH = process.env.UPLOAD_LOCAL_PATH || './uploads';
-const UPLOAD_BASE_URL = process.env.UPLOAD_BASE_URL || 'http://localhost:4000/uploads';
+const UPLOAD_BASE_URL = process.env.UPLOAD_BASE_URL || '/uploads';
 
 const s3Client = UPLOAD_STORAGE === 's3' ? new S3Client({
   region: process.env.AWS_S3_REGION,
