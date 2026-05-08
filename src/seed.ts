@@ -80,73 +80,107 @@ async function seed() {
       {
         employer_id: employerProfile._id,
         lane: 1, 
-        job_title: 'Match 1: Exact Center Cook',
-        primary_skill: 'cook', // Must be exact match to query
+        job_title: 'Executive Chef - North Indian Speciality',
+        job_description: 'We are looking for an experienced Executive Chef specializing in North Indian cuisine. The ideal candidate should have a strong background in tandoor and curry preparations, team management, and kitchen operations.',
+        primary_skill: 'cook',
+        secondary_skills_preferred: ['Management', 'Inventory Control'],
+        cuisine_preferred: ['North Indian', 'Mughlai'],
         pay_type: 'PER_SHIFT',
-        pay_rate: 600, // Satisfies pay_rate >= 500
+        pay_rate: 1200,
         number_of_openings: 1,
-        status: 'BROADCASTING', // Satisfies status in array
-        // expires_at omitted -> satisfies { expires_at: { $exists: false } }
-        location: { type: 'Point', coordinates: [centerLng, centerLat] }, // 0km away
+        experience_years_min: 5,
+        accommodation_provided: true,
+        meals_provided: true,
+        status: 'BROADCASTING',
+        location: { type: 'Point', coordinates: [centerLng, centerLat] },
       },
       {
         employer_id: employerProfile._id,
         lane: 1, 
-        job_title: 'Match 2: Cook 2km North',
+        job_title: 'Line Cook - Continental Cuisine',
+        job_description: 'Seeking a skilled Line Cook for our busy Continental section. Responsibilities include prep work, maintaining station hygiene, and ensuring timely delivery of orders during peak hours.',
         primary_skill: 'cook',
+        secondary_skills_preferred: ['Prep work', 'Grilling'],
+        cuisine_preferred: ['Continental', 'Italian'],
         pay_type: 'PER_SHIFT',
-        pay_min: 550, // Satisfies pay_min >= 500
-        pay_max: 800,
+        pay_min: 700,
+        pay_max: 900,
         number_of_openings: 2,
-        status: 'PARTIALLY_FILLED', // Satisfies status in array
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days -> satisfies gt current date
-        location: { type: 'Point', coordinates: [centerLng, centerLat + 0.018] }, // ~2km away
-      },
-      {
-        employer_id: employerProfile._id,
-        lane: 2, 
-        job_title: 'Match 3: Cook 5km East',
-        primary_skill: 'cook',
-        pay_type: 'MONTHLY',
-        pay_min: 15000, // Satisfies pay_min >= 500
-        number_of_openings: 3,
-        status: 'BROADCASTING',
-        location: { type: 'Point', coordinates: [centerLng + 0.045, centerLat] }, // ~5km away
-      },
-      {
-        employer_id: employerProfile._id,
-        lane: 2, 
-        job_title: 'Match 4: Cook 8km South-West',
-        primary_skill: 'cook',
-        pay_type: 'PER_SHIFT',
-        pay_rate: 750, // Satisfies pay_rate >= 500
-        number_of_openings: 1,
+        experience_years_min: 2,
+        meals_provided: true,
         status: 'PARTIALLY_FILLED',
-        location: { type: 'Point', coordinates: [centerLng - 0.05, centerLat - 0.05] }, // ~7.5km away
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        location: { type: 'Point', coordinates: [centerLng, centerLat + 0.018] },
+      },
+      {
+        employer_id: employerProfile._id,
+        lane: 2, 
+        job_title: 'South Indian Dosa Specialist',
+        job_description: 'Expert Dosa Master required for a premium breakfast outlet. Must be proficient in making various types of dosas and chutneys with high speed and consistency.',
+        primary_skill: 'cook',
+        secondary_skills_preferred: ['Speed cooking', 'Hygiene standards'],
+        cuisine_preferred: ['South Indian'],
+        pay_type: 'MONTHLY',
+        pay_min: 18000,
+        number_of_openings: 3,
+        experience_years_min: 3,
+        accommodation_provided: true,
+        meals_provided: true,
+        status: 'BROADCASTING',
+        location: { type: 'Point', coordinates: [centerLng + 0.045, centerLat] },
+      },
+      {
+        employer_id: employerProfile._id,
+        lane: 2, 
+        job_title: 'Assistant Cook - Chinese Section',
+        job_description: 'Looking for an Assistant Cook to support our Chinese wok station. Should have basic knowledge of sauces, chopping techniques, and wok handling.',
+        primary_skill: 'cook',
+        secondary_skills_preferred: ['Knife skills', 'Wok handling'],
+        cuisine_preferred: ['Chinese', 'Pan-Asian'],
+        pay_type: 'PER_SHIFT',
+        pay_rate: 650,
+        number_of_openings: 1,
+        experience_years_min: 1,
+        meals_provided: true,
+        status: 'PARTIALLY_FILLED',
+        location: { type: 'Point', coordinates: [centerLng - 0.05, centerLat - 0.05] },
       },
       {
         employer_id: employerProfile._id,
         lane: 3, 
-        job_title: 'Match 5: Cook 12km North-West',
+        job_title: 'Pastry Chef - Bakery & Cafe',
+        job_description: 'Join our cafe as a Pastry Chef. You will be responsible for baking fresh breads, cakes, and pastries daily. Creativity and attention to detail are highly valued.',
         primary_skill: 'cook',
+        secondary_skills_preferred: ['Baking', 'Cake decoration'],
+        cuisine_preferred: ['Bakery', 'Desserts'],
         pay_type: 'MONTHLY',
-        pay_min: 12000, // Satisfies pay_min >= 500
-        pay_max: 18000,
+        pay_min: 22000,
+        pay_max: 28000,
         number_of_openings: 1,
+        experience_years_min: 4,
+        transport_provided: true,
+        meals_provided: true,
         status: 'BROADCASTING',
-        location: { type: 'Point', coordinates: [centerLng - 0.08, centerLat + 0.07] }, // ~12km away
+        location: { type: 'Point', coordinates: [centerLng - 0.08, centerLat + 0.07] },
       },
       {
         employer_id: employerProfile._id,
         lane: 4, 
-        job_title: 'Match 6: Premium Cook 14km South',
+        job_title: 'Head Chef - Fine Dining Restaurant',
+        job_description: 'Leads our culinary team in a high-end fine dining environment. Responsible for menu planning, costing, quality control, and maintaining the highest standards of service.',
         primary_skill: 'cook',
+        secondary_skills_preferred: ['Menu planning', 'Leadership'],
+        cuisine_preferred: ['Fusion', 'Modern Indian'],
         pay_type: 'MONTHLY',
-        pay_rate: 25000, // Satisfies pay_rate >= 500
+        pay_rate: 45000,
         number_of_openings: 1,
+        experience_years_min: 8,
+        accommodation_provided: true,
+        meals_provided: true,
+        transport_provided: true,
         status: 'BROADCASTING',
         cream_pool_first: true,
-        location: { type: 'Point', coordinates: [centerLng, centerLat - 0.12] }, // ~13.5km away
+        location: { type: 'Point', coordinates: [centerLng, centerLat - 0.12] },
       }
     ];
 
