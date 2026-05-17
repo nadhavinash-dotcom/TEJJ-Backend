@@ -1,0 +1,144 @@
+src/routes/analytics.ts(21,47): error TS2769: No overload matches this call.
+src/routes/analytics.ts(27,28): error TS2769: No overload matches this call.
+src/routes/analytics.ts(28,20): error TS2769: No overload matches this call.
+src/routes/analytics.ts(29,27): error TS2769: No overload matches this call.
+src/routes/analytics.ts(41,41): error TS2769: No overload matches this call.
+src/routes/applications.ts(15,41): error TS2769: No overload matches this call.
+src/routes/applications.ts(28,38): error TS2769: No overload matches this call.
+src/routes/applications.ts(52,5): error TS2769: No overload matches this call.
+src/routes/applications.ts(71,43): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/applications.ts(84,66): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/applications.ts(84,99): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/applications.ts(89,41): error TS2769: No overload matches this call.
+src/routes/applications.ts(130,45): error TS2769: No overload matches this call.
+src/routes/applications.ts(138,49): error TS2769: No overload matches this call.
+src/routes/applications.ts(163,45): error TS2769: No overload matches this call.
+src/routes/applications.ts(177,7): error TS2769: No overload matches this call.
+src/routes/applications.ts(193,45): error TS2769: No overload matches this call.
+src/routes/applications.ts(200,7): error TS2769: No overload matches this call.
+src/routes/auth.ts(107,28): error TS2769: No overload matches this call.
+src/routes/auth.ts(113,30): error TS2769: No overload matches this call.
+src/routes/crew-pools.ts(10,45): error TS2769: No overload matches this call.
+src/routes/crew-pools.ts(16,39): error TS2769: No overload matches this call.
+src/routes/crew-pools.ts(35,45): error TS2769: No overload matches this call.
+src/routes/crew-pools.ts(47,5): error TS2769: No overload matches this call.
+src/routes/crew-pools.ts(55,17): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/crew-pools.ts(56,18): error TS2339: Property 'pool_name' does not exist on type 'never'.
+src/routes/crew-pools.ts(57,25): error TS2339: Property 'description' does not exist on type 'never'.
+src/routes/dispatch.ts(32,41): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(49,45): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(75,9): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(95,69): error TS2339: Property 'confirmed_at' does not exist on type 'ModifyResult<IMatch>'.
+src/routes/dispatch.ts(108,45): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(115,7): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(132,39): error TS2339: Property 'worker_id' does not exist on type 'ModifyResult<IMatch>'.
+src/routes/dispatch.ts(136,35): error TS2339: Property 'worker_id' does not exist on type 'ModifyResult<IMatch>'.
+src/routes/dispatch.ts(144,41): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(150,29): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(161,41): error TS2769: No overload matches this call.
+src/routes/dispatch.ts(168,5): error TS2769: No overload matches this call.
+src/routes/employers.ts(17,45): error TS2769: No overload matches this call.
+src/routes/employers.ts(35,45): error TS2769: No overload matches this call.
+src/routes/employers.ts(47,45): error TS2769: No overload matches this call.
+src/routes/employers.ts(58,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(72,31): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/employers.ts(94,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(131,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(155,47): error TS2769: No overload matches this call.
+src/routes/employers.ts(166,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(200,47): error TS2769: No overload matches this call.
+src/routes/employers.ts(210,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(216,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(219,64): error TS2769: No overload matches this call.
+src/routes/employers.ts(225,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(231,7): error TS2769: No overload matches this call.
+src/routes/employers.ts(240,65): error TS2769: No overload matches this call.
+src/routes/employers.ts(267,47): error TS2769: No overload matches this call.
+src/routes/employers.ts(273,55): error TS2769: No overload matches this call.
+src/routes/employers.ts(278,41): error TS2769: No overload matches this call.
+src/routes/interviews.ts(13,45): error TS2769: No overload matches this call.
+src/routes/interviews.ts(21,41): error TS2769: No overload matches this call.
+src/routes/interviews.ts(30,5): error TS2769: No overload matches this call.
+src/routes/interviews.ts(51,39): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/interviews.ts(55,73): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/interviews.ts(60,45): error TS2769: No overload matches this call.
+src/routes/interviews.ts(67,19): error TS2769: No overload matches this call.
+src/routes/interviews.ts(72,37): error TS2769: No overload matches this call.
+src/routes/jobs.ts(10,15): error TS2614: Module '"mongoose"' has no exported member 'FilterQuery'. Did you mean to use 'import FilterQuery from "mongoose"' instead?
+src/routes/jobs.ts(29,43): error TS2769: No overload matches this call.
+src/routes/jobs.ts(170,47): error TS2769: No overload matches this call.
+src/routes/jobs.ts(176,35): error TS2769: No overload matches this call.
+src/routes/jobs.ts(181,65): error TS2769: No overload matches this call.
+src/routes/jobs.ts(201,45): error TS2769: No overload matches this call.
+src/routes/jobs.ts(207,46): error TS2769: No overload matches this call.
+src/routes/jobs.ts(235,41): error TS2769: No overload matches this call.
+src/routes/jobs.ts(275,45): error TS2769: No overload matches this call.
+src/routes/jobs.ts(351,11): error TS2339: Property 'expires_at' does not exist on type '{ lane: number; job_title: any; job_description: any; primary_skill: any; pay_rate: number; shift_duration_hours: number | undefined; number_of_openings: number; keywords_extracted: any; employer_id: ObjectId; location: { ...; } | undefined; status: string; shift_start_time: Date | undefined; }'.
+src/routes/jobs.ts(357,32): error TS2769: No overload matches this call.
+src/routes/jobs.ts(360,7): error TS2769: No overload matches this call.
+src/routes/jobs.ts(360,59): error TS2339: Property 'primary_skill' does not exist on type 'never'.
+src/routes/jobs.ts(360,89): error TS2339: Property 'job_title' does not exist on type 'never'.
+src/routes/jobs.ts(363,23): error TS2339: Property 'pay_rate' does not exist on type 'never'.
+src/routes/jobs.ts(364,35): error TS2339: Property 'shift_duration_hours' does not exist on type 'never'.
+src/routes/jobs.ts(365,35): error TS2339: Property 'job_description' does not exist on type 'never'.
+src/routes/jobs.ts(369,31): error TS2339: Property 'job_title' does not exist on type 'never'.
+src/routes/jobs.ts(380,11): error TS2339: Property 'lane' does not exist on type 'never'.
+src/routes/jobs.ts(381,27): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/jobs.ts(384,61): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/jobs.ts(389,45): error TS2769: No overload matches this call.
+src/routes/jobs.ts(396,7): error TS2769: No overload matches this call.
+src/routes/matches.ts(16,45): error TS2769: No overload matches this call.
+src/routes/matches.ts(28,41): error TS2769: No overload matches this call.
+src/routes/matches.ts(47,5): error TS2769: No overload matches this call.
+src/routes/matches.ts(65,5): error TS2769: No overload matches this call.
+src/routes/matches.ts(74,98): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/matches.ts(95,33): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/matches.ts(96,45): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/matches.ts(101,60): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/matches.ts(101,81): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/matches.ts(143,47): error TS2769: No overload matches this call.
+src/routes/notifications.ts(10,51): error TS2769: No overload matches this call.
+src/routes/notifications.ts(21,22): error TS2769: No overload matches this call.
+src/routes/notifications.ts(30,22): error TS2769: No overload matches this call.
+src/routes/ratings.ts(15,45): error TS2769: No overload matches this call.
+src/routes/ratings.ts(23,29): error TS2769: No overload matches this call.
+src/routes/ratings.ts(32,5): error TS2769: No overload matches this call.
+src/routes/ratings.ts(42,79): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/ratings.ts(47,67): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/ratings.ts(52,41): error TS2769: No overload matches this call.
+src/routes/ratings.ts(60,29): error TS2769: No overload matches this call.
+src/routes/ratings.ts(89,47): error TS2769: No overload matches this call.
+src/routes/referrals.ts(17,43): error TS2769: No overload matches this call.
+src/routes/referrals.ts(22,45): error TS2769: No overload matches this call.
+src/routes/referrals.ts(49,43): error TS2769: No overload matches this call.
+src/routes/referrals.ts(61,47): error TS2769: No overload matches this call.
+src/routes/referrals.ts(65,7): error TS2769: No overload matches this call.
+src/routes/referrals.ts(66,7): error TS2769: No overload matches this call.
+src/routes/whisper.ts(27,41): error TS2769: No overload matches this call.
+src/routes/workers.ts(16,41): error TS2769: No overload matches this call.
+src/routes/workers.ts(45,41): error TS2769: No overload matches this call.
+src/routes/workers.ts(60,43): error TS2769: No overload matches this call.
+src/routes/workers.ts(95,7): error TS2769: No overload matches this call.
+src/routes/workers.ts(106,27): error TS2339: Property '_id' does not exist on type 'never'.
+src/routes/workers.ts(203,9): error TS2769: No overload matches this call.
+src/routes/workers.ts(239,7): error TS2769: No overload matches this call.
+src/routes/workers.ts(260,41): error TS2769: No overload matches this call.
+src/routes/workers.ts(295,41): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(21,47): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(26,5): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(37,5): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(38,5): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(52,5): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(53,5): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(60,56): error TS2339: Property '_id' does not exist on type 'never'.
+src/services/dispatchService.ts(62,43): error TS2339: Property '_id' does not exist on type 'never'.
+src/services/dispatchService.ts(100,7): error TS2769: No overload matches this call.
+src/services/dispatchService.ts(101,7): error TS2769: No overload matches this call.
+src/services/notificationService.ts(58,39): error TS2769: No overload matches this call.
+src/services/notificationService.ts(76,39): error TS2769: No overload matches this call.
+src/services/notificationService.ts(99,31): error TS2769: No overload matches this call.
+src/services/platformEventService.ts(5,34): error TS2769: No overload matches this call.
+src/services/trustScoreService.ts(13,5): error TS2769: No overload matches this call.
+src/services/trustScoreService.ts(18,5): error TS2769: No overload matches this call.
+src/services/trustScoreService.ts(25,45): error TS2769: No overload matches this call.
+src/services/trustScoreService.ts(60,47): error TS2769: No overload matches this call.

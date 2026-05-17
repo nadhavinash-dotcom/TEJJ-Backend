@@ -333,7 +333,7 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res: Response) =
     return;
   }
 
-  const jobData = {
+  const jobData: any = {
     lane,
     job_title: req.body.job_title.trim(),
     job_description: typeof req.body.description === 'string' ? req.body.description.trim() : undefined,
