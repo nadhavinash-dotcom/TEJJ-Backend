@@ -1,0 +1,1 @@
+src/routes/jobs.ts(351,11): error TS2339: Property 'expires_at' does not exist on type '{ lane: number; job_title: any; job_description: any; primary_skill: any; pay_rate: number; shift_duration_hours: number | undefined; number_of_openings: number; keywords_extracted: any; employer_id: any; location: { ...; } | undefined; status: string; shift_start_time: Date | undefined; }'.
